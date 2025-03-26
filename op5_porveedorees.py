@@ -22,7 +22,7 @@ def modificar_proveedor(id, nombre, telefono, direccion):
     try:
         cone = config.ConexionBaseDeDatos()
         query = cone.cursor()
-        sql = "UPDATE Proveedores SET nombre = ?, telefono = ?, direccion = ? WHERE id = ?;"
+        sql = "UPDATE Proveedores SET nombre = ?, telefono = ?, direccion = ? WHERE ID_Proveedor = ?;"
         valores = (nombre, telefono, direccion, id)
         query.execute(sql, valores)
         cone.commit()
@@ -35,7 +35,7 @@ def eliminar_proveedor(id):
     try:
         cone = config.ConexionBaseDeDatos()
         query = cone.cursor()
-        sql = "DELETE FROM Proveedores WHERE id = ?;"
+        sql = "DELETE FROM Proveedores WHERE ID_Proveedor = ?;"
         valores = (id,)
         query.execute(sql, valores)
         cone.commit()
@@ -92,12 +92,14 @@ def proveedores():
             valores = tabla.item(seleccionado, "values")
             if valores:
                 id_seleccionado.set(valores[0])
+                entry_buscar.delete(0, tk.END)
+                entry_buscar.insert(0, valores[0])
                 entry_nombre.delete(0, tk.END)
                 entry_nombre.insert(0, valores[1])
-                entry_telefono.delete(0, tk.END)
-                entry_telefono.insert(0, valores[2])
                 entry_direccion.delete(0, tk.END)
-                entry_direccion.insert(0, valores[3])
+                entry_direccion.insert(0, valores[2])
+                entry_telefono.delete(0, tk.END)
+                entry_telefono.insert(0, valores[3])
 
     def buscar_proveedores():
         id_buscar = entry_buscar.get().strip()

@@ -22,7 +22,7 @@ def modificar_cliente(id, nombre, telefono, direccion):
     try:
         cone = config.ConexionBaseDeDatos()
         query = cone.cursor()
-        sql = "UPDATE Clientes SET nombre = ?, telefono = ?, direccion = ? WHERE id = ?;"
+        sql = "UPDATE Clientes SET nombre = ?, telefono = ?, direccion = ? WHERE ID_Cliente = ?;"
         valores = (nombre, telefono, direccion, id)
         query.execute(sql, valores)
         cone.commit()
@@ -35,7 +35,7 @@ def eliminar_cliente(id):
     try:
         cone = config.ConexionBaseDeDatos()
         query = cone.cursor()
-        sql = "DELETE FROM Clientes WHERE id = ?;"
+        sql = "DELETE FROM Clientes WHERE ID_Cliente = ?;"
         valores = (id,)
         query.execute(sql, valores)
         cone.commit()
@@ -55,7 +55,7 @@ def mostrar_clientes():
     except sqlite3.Error as error:
         print(f"Error al mostrar los Clientes: {error}")
         return []
-
+"""
 def seleccionar_registro(event):
     seleccionado = tabla.focus()
     if seleccionado:
@@ -67,7 +67,7 @@ def seleccionar_registro(event):
             entry_direccion.delete(0, tk.END)
             entry_direccion.insert(0, valores[2])
             entry_telefono.delete(0, tk.END)
-            entry_telefono.insert(0, valores[3])
+            entry_telefono.insert(0, valores[3])"""
 
 def actualizar_tabla():
     for row in tabla.get_children():
@@ -92,12 +92,14 @@ def clientes():
             valores = tabla.item(seleccionado, "values")
             if valores:
                 id_seleccionado.set(valores[0])
+                entry_buscar.delete(0, tk.END)
+                entry_buscar.insert(0, valores[0])
                 entry_nombre.delete(0, tk.END)
                 entry_nombre.insert(0, valores[1])
                 entry_telefono.delete(0, tk.END)
-                entry_telefono.insert(0, valores[2])
+                entry_telefono.insert(0, valores[3])
                 entry_direccion.delete(0, tk.END)
-                entry_direccion.insert(0, valores[3])
+                entry_direccion.insert(0, valores[2])
 
     def buscar_clientes():
         id_buscar = entry_buscar.get().strip()
