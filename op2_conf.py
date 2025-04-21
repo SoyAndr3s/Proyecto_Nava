@@ -6,7 +6,7 @@ def configuracion():
     from config import obtener_configuracion, actualizar_configuracion
     
     config_window = tk.Toplevel()
-    config_window.geometry("500x200")
+    config_window.geometry("360x160")
     config_window.title("Configuración de Usuario")
 
     usuario_actual, clave_actual, modo_actual = obtener_configuracion()

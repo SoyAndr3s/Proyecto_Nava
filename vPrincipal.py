@@ -1,12 +1,15 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import op1_reporte, op2_conf, op3_inventario, op4_clients, op5_porveedorees
 
 # Función para iniciar el punto de venta
 def iniciar_punto_venta():
-    from config import boton_buscar, actualizar_fecha_hora
+    from config import busqueda_articulo, actualizar_fecha_hora, procesar_codigo, abrir_ventana_cobro
 
     global root, fecha_label, hora_label
+    # Diccionario para almacenar los productos agregados
+    productos_agregados = {}
+    
     root = tk.Tk()
     root.title("Punto de Venta")
     root.geometry("895x455")
@@ -63,6 +66,10 @@ def iniciar_punto_venta():
     tk.Label(groupbox3, text="Codigo:", padx=10, pady=10).grid(row=0, column=0)
     entry_producto = tk.Entry(groupbox3, width=60)
     entry_producto.grid(row=0, column=1, columnspan=2)
+    
+    def boton_buscar():
+        busqueda_articulo(tree, productos_agregados, total_label)
+    
     BtnBuscar = tk.Button(groupbox3, text="Buscar", command=boton_buscar, width=10)
     BtnBuscar.grid(row=0, column=3, padx=10, pady=5)
     
@@ -82,8 +89,11 @@ def iniciar_punto_venta():
 
     # Posicionar el Treeview en la ventana
     tree.grid(row=1, column=0, columnspan=4, padx=10, pady=10)
-    #BtnBorrar = tk.Button(groupbox3, text="Borrar", width=10)
-    #BtnBorrar.grid(row=2, column=0, padx=10, pady=10)
+
+    # Asociar enter con función externa
+    entry_producto.bind("<Return>", lambda event: procesar_codigo(event, entry_producto, tree, total_label, productos_agregados))
+
+    
     
     # Groupbox 4: Resumen de venta
     groupbox4 = tk.LabelFrame(root, text="Resumen de Venta", padx=10, pady=10)
@@ -92,6 +102,7 @@ def iniciar_punto_venta():
     sub_groupbox.pack(pady=5)
     total_label = tk.Label(sub_groupbox, text="$0.00", font=("Arial", 16))
     total_label.pack()
-    tk.Button(groupbox4, text="Cobrar", width=10).pack(pady=10)
+    tk.Button(groupbox4, text="Cobrar", width=10, command=lambda: abrir_ventana_cobro(root, productos_agregados)).pack(pady=10)
+
     
     root.mainloop()
