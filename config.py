@@ -12,12 +12,11 @@ def actualizar_fecha_hora(fecha_label, hora_label, root):
         root.after(1000, actualizar)  # Actualiza cada segundo
 
     actualizar()
+    
+def maquina_usasda(mache_label):
+    mache_label.config(text="Maquina 1")
 
 def busqueda_articulo(tree_principal, productos_agregados, total_label):
-    import tkinter as tk
-    from tkinter import ttk, messagebox
-    from config import ConexionBaseDeDatos, actualizar_tabla, actualizar_total
-
     ventana_buscar = tk.Toplevel()
     ventana_buscar.title("Buscar Artículo")
     ventana_buscar.geometry("600x400")
@@ -212,54 +211,76 @@ def procesar_codigo(event=None, entry_producto=None, tree=None, total_label=None
         messagebox.showerror("No encontrado", f"No se encontró el producto con código: {codigo}")
         entry_producto.delete(0, tk.END)
 
-def abrir_ventana_cobro(root, productos_agregados):
+def abrir_ventana_cobro(root, productos_agregados, cliente_id=1):
     total = sum(datos["precio"] * datos["cantidad"] for datos in productos_agregados.values())
 
     ventana_cobro = tk.Toplevel(root)
     ventana_cobro.title("Cobrar")
-    ventana_cobro.geometry("350x285")
+    ventana_cobro.geometry("350x300")
 
     tk.Label(ventana_cobro, text=f"Total a pagar: ${total:.2f}", font=("Arial", 14)).pack(pady=5)
 
-    # Frame para Pagos
+    # Entrada de pago
     Cantidad_recibida = tk.LabelFrame(ventana_cobro, text="Cantidad recibida:")
     Cantidad_recibida.pack(pady=5)
     entrada_pago = tk.Entry(Cantidad_recibida, font=("Arial", 12), justify="center")
     entrada_pago.grid(column=0, row=0, padx=10, pady=5)
-    
-    tk.Button(Cantidad_recibida, text="Clear", bg="red", fg="white").grid(column=1, row=0, padx=10, pady=5)
 
-    # Función para agregar valor al campo de entrada
-    def agregar_pago(valor):
-        try:
-            actual = float(entrada_pago.get()) if entrada_pago.get() else 0
-        except ValueError:
-            actual = 0
-        nuevo = actual + valor
+    def limpiar():
         entrada_pago.delete(0, tk.END)
-        entrada_pago.insert(0, f"{nuevo:.2f}")
+    tk.Button(Cantidad_recibida, text="Clear", bg="red", fg="white", command=limpiar).grid(column=1, row=0)
 
-    # Frame para botones de billetes
+    # Botones rápidos
     total_pago = tk.LabelFrame(ventana_cobro, text="Pagos Rápidos")
     total_pago.pack(pady=5)
+    for i, valor in enumerate([50, 100, 200, 500]):
+        tk.Button(total_pago, text=f"${valor}", width=8,
+                  command=lambda v=valor: entrada_pago.insert(tk.END, str(v))).grid(row=0, column=i, padx=5)
 
-    billetes = [50, 100, 200, 500]
-    for i, valor in enumerate(billetes):
-        tk.Button(total_pago, text=f"${valor}", width=8, command=lambda v=valor: agregar_pago(v)).grid(row=0, column=i, padx=10, pady=5)
-
-    # Label para mostrar el cambio
-    cambio_label = tk.Label(ventana_cobro, text=f"Cambio: $0.00", fg="red", font=("Arial", 14))
+    cambio_label = tk.Label(ventana_cobro, text="Cambio: $0.00", fg="red", font=("Arial", 14))
     cambio_label.pack(pady=10)
 
-    def calcular_cambio():
+    def cobrar():
         try:
             pago = float(entrada_pago.get())
-            if pago < total:
-                cambio_label.config(text="Pago insuficiente", fg="red")
-            else:
-                cambio = pago - total
-                cambio_label.config(text=f"Cambio: ${cambio:.2f}", fg="red")
         except ValueError:
             cambio_label.config(text="Cantidad inválida", fg="red")
+            return
 
-    tk.Button(ventana_cobro, text="Cobrar", command=calcular_cambio, bg="green", fg="white").pack(pady=5)
+        if pago < total:
+            cambio_label.config(text="Pago insuficiente", fg="red")
+            return
+
+        cambio = pago - total
+        cambio_label.config(text=f"Cambio: ${cambio:.2f}", fg="green")
+
+        # === GUARDAR EN BASE DE DATOS ===
+        try:
+            conn = ConexionBaseDeDatos()
+            cursor = conn.cursor()
+
+            # Insertar en tabla 'ventas'
+            from datetime import datetime
+            fecha = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cursor.execute("INSERT INTO Ventas (Fecha_Hora, Total, ID_Cliente) VALUES (?, ?, ?)", (fecha, total, cliente_id))
+            venta_id = cursor.lastrowid
+
+            # Insertar detalle y actualizar stock
+            for codigo, datos in productos_agregados.items():
+                precio = datos["precio"]
+                cantidad = datos["cantidad"]
+                subtotal = cantidad * precio
+                cursor.execute("INSERT INTO Detalle_Ventas (ID_Venta, ID_Producto, cantidad, Precio_Ud, Subtotal) VALUES (?, ?, ?, ?, ?)",
+                               (venta_id, codigo, cantidad, precio, subtotal))
+
+                cursor.execute("UPDATE Productos SET Cantidad = Cantidad - ? WHERE Codigo_Barras = ?", (cantidad, codigo))
+
+            conn.commit()
+            conn.close()
+            messagebox.showinfo("Venta Registrada", f"Venta registrada correctamente. Cambio: ${cambio:.2f}")
+            ventana_cobro.destroy()
+            root.destroy()  # cerrar y reiniciar para nueva venta
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo registrar la venta: {e}")
+
+    tk.Button(ventana_cobro, text="Cobrar", command=cobrar, bg="green", fg="white").pack(pady=5)
